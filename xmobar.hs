@@ -1,8 +1,7 @@
--- xmobar config used by Vic Fryzel
--- Author: Vic Fryzel
--- http://github.com/vicfryzel/xmonad-config
+-- xmobar config used by David Göransson
+-- Author: David Göransson
+-- http://github.com/Rawa/xmonad-config
 
--- This is setup for dual 1920x1080 monitors, with the right monitor as primary
 Config {
     bgColor = "#000000",
     fgColor = "#ffffff",
