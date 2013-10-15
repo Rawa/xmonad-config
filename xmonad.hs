@@ -56,7 +56,7 @@ import Data.Maybe (fromMaybe)
 ----------------------
 -- Define variables --
 ----------------------
-myTerminal = "/usr/bin/gnome-terminal"
+myTerminal = "gnome-terminal"
 myBrowser = "x-www-browser"
 runMenu = spawn "dmenu_run"
 
@@ -219,16 +219,9 @@ myMouseBindings (XConfig {XMonad.modMask = modMask}) = M.fromList $
        (\w -> focus w >> mouseResizeWindow w))
   ]
 
-
-
-
-------------------------------------------------------------------------
--- Startup hook
--- Perform an arbitrary action each time xmonad starts or is restarted
--- with mod-q.  Used by, e.g., XMonad.Layout.PerWorkspace to initialize
--- per-workspace layout choices.
---
--- By default, do nothing.
+------------------
+-- Startup hook --
+------------------
 myStartupHook = return ()
 
 
@@ -249,14 +242,9 @@ main = do
   }
 
 
-------------------------------------------------------------------------
--- Combine it all together
--- A structure containing your configuration settings, overriding
--- fields in the default config. Any you don't override, will
--- use the defaults defined in xmonad/XMonad/Config.hs
---
--- No need to modify this.
---
+------------------
+-- Merge it all --
+------------------
 defaults = defaultConfig {
     -- simple stuff
     terminal           = myTerminal,
