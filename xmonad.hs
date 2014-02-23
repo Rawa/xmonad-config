@@ -44,6 +44,8 @@ import XMonad.Util.Run(spawnPipe)
 import XMonad.Util.EZConfig(additionalKeys)
 import XMonad.Util.Run
 import XMonad.Util.Dmenu
+import XMonad.Util.Scratchpad
+import XMonad.Util.NamedScratchpad
 import XMonad.Prompt
 import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
@@ -56,15 +58,15 @@ import Data.Maybe (fromMaybe)
 ----------------------
 -- Define variables --
 ----------------------
-myTerminal = "gnome-terminal"
-myBrowser = "x-www-browser"
-runMenu = spawn "dmenu_run"
+myTerminal = "urxvt"
+myBrowser = "google-chrome-stable"
+runMenu = spawn "exec $(/home/rawa/.cabal/bin/yeganesh -x)"
 
 
 -----------------------
 -- Define Workspaces --
 -----------------------
-myWorkspaces = ["1:term","2:web","3:code","4:subl","5:media","6:vm"] ++ map show [7..9]
+myWorkspaces = ["1:term","2:web","3:code","4:irc","5:media","6:vm"] ++ map show [7..9]
 
 --
 -- Define windows
@@ -72,19 +74,42 @@ myWorkspaces = ["1:term","2:web","3:code","4:subl","5:media","6:vm"] ++ map show
 --
 
 myManageHook = composeAll
-    [ className =? "x-www-browser"  --> doShift "2:web"
-    , className =? "Google-chrome"  --> doShift "2:web"
-    , className =? "Sublime_text"   --> doShift "4:subl"
+    ([ className =? "x-www-browser" --> doShift "2:web"
+    , className =? "Google-chrome-stable"  --> doShift "2:web"
+    , className =? "Subl3"          --> doShift "3:code"
     , className =? "Eclipse"        --> doShift "3:code"
-    , className =? "Java" 	        --> doShift "3:code"
-    , className =? "Xchat"          --> doShift "5:media"
+    , className =? "Java"           --> doShift "3:code"
+    , title =? "irssi"              --> doShift "4:irc"
+    , className =? "spotify.exe"    --> doShift "5:media"
+    , className =? "Wine"           --> doShift "5:media"
     , className =? "VirtualBox"     --> doShift "6:vm"
     , resource  =? "desktop_window" --> doIgnore
     , resource  =? "gpicview"       --> doFloat
     , className =? "MPlayer"        --> doFloat
     , className =? "stalonetray"    --> doIgnore
-    , isFullscreen --> (doF W.focusDown <+> doFullFloat)]
+    , isFullscreen --> (doF W.focusDown <+> doFullFloat)]) <+> namedScratchpadManageHook myScratchpads
 
+
+----------------
+-- Scratchpads--
+----------------
+
+myScratchpads = let 
+  reallyFull = customFloating $ W.RationalRect 0.025 0.025 0.95 0.95
+  full = customFloating $ W.RationalRect 0.03 0.05 0.94 0.9
+  top = customFloating $ W.RationalRect 0.025 0.05 0.95 0.45
+  bottom = customFloating $ W.RationalRect 0.1 0.7 0.80 0.3
+  in [
+    NS "Mail" 
+       "google-chrome-stable --app=https://mail.google.com"
+       (appName =? "mail.google.com") full 
+  , NS "Calendar"
+       "google-chrome-stable --app=https://calendar.google.com"
+       (appName =? "calendar.google.com") full
+  , NS "BottomTerminal"
+       "urxvt -name BottomTerminal"
+       (appName =? "BottomTerminal") bottom 
+  ]
 
 ------------------------
 -- Layout definitions --
@@ -94,11 +119,9 @@ myManageHook = composeAll
 myLayout = avoidStruts (
     Tall 1 (3/100) (1/2) |||
     Mirror (Tall 1 (3/100) (1/2)) |||
-    tabbed shrinkText tabConfig |||
-    Full |||
-    spiral (6/7)) |||
+    tabbed shrinkText tabConfig) |||
+    -- full |||
     noBorders (fullscreenFull Full)
-
 
 ---------------------------------
 -- Color and design properties --
@@ -145,17 +168,21 @@ altMask   = mod1Mask
 myKeys conf = M.fromList $
     [ ((myModMask              , xK_Return    ), spawn myTerminal)
     , ((myModMask              , xK_x         ), spawn myBrowser)
-    , ((myModMask              , xK_r         ), runMenu)
+    , ((myModMask              , xK_space     ), runMenu)
     , ((myModMask              , xK_c         ), kill)
     -- Empty Workspace Movement
-    , ((altMask                , xK_space     ), viewEmptyWorkspace)
-    , ((altMask .|. shiftMask  , xK_space     ), tagToEmptyWorkspace)
+    , ((altMask                , xK_r         ), viewEmptyWorkspace)
+    , ((altMask .|. shiftMask  , xK_r         ), tagToEmptyWorkspace)
     -- Layout Commands
-    , ((myModMask              , xK_space     ), sendMessage NextLayout)
+    , ((altMask                , xK_space     ), sendMessage NextLayout)
     , ((altMask .|. shiftMask  , xK_Return    ), sendMessage FirstLayout)
-    , ((myModMask              , xK_n         ), refresh)
-    , ((myModMask              , xK_m         ), windows S.swapMaster)
+    , ((myModMask              , xK_g         ), refresh)
+    , ((myModMask              , xK_f         ), windows S.swapMaster)
     -- controlling window movement, position and location
+
+    , ((myModMask              , xK_m         ), namedScratchpadAction myScratchpads "Mail")
+    , ((myModMask              , xK_z         ), namedScratchpadAction myScratchpads "BottomTerminal")
+    , ((myModMask              , xK_n         ), namedScratchpadAction myScratchpads "Calendar")
     , ((altMask                , xK_Tab       ), windows S.focusDown)
     , ((altMask .|. shiftMask  , xK_Tab       ), windows S.focusUp)
     , ((myModMask              , xK_Tab       ), windows S.focusDown)
@@ -169,7 +196,7 @@ myKeys conf = M.fromList $
     , ((myModMask              , xK_v         ), sendMessage (IncMasterN (-1)))
     -- Shutdown commands
     , ((myModMask              , xK_q         ), restart "xmonad" True)
-    , ((myModMask              , xK_h         ), spawn "gksudo pm-hibernate")
+    , ((myModMask              , xK_h         ), spawn "sudo pm-hibernate")
     , ((myModMask .|. shiftMask, xK_q         ), io (exitWith ExitSuccess))
     , ((myModMask .|. shiftMask, xK_w         ), spawn "gnome-screensaver-command -l")
     -- Print Screen
@@ -192,7 +219,7 @@ myKeys conf = M.fromList $
   -- mod-shift-[1..9], Move client to workspace N
   [((m .|. myModMask, k), windows $ f i)
       | (i, k) <- zip (XMonad.workspaces conf) [xK_1 .. xK_9]
-      , (f, m) <- [(W.greedyView, 0), (W.shift, shiftMask)]]
+      , (f, m) <- [(W.greedyView, 0), (W.shift, shiftMask)]] 
 
 --------------------
 -- Mouse bindings --
@@ -236,6 +263,9 @@ main = do
           , ppTitle = xmobarColor xmobarTitleColor "" . shorten 100
           , ppCurrent = xmobarColor xmobarCurrentWorkspaceColor ""
           , ppSep = " | "
+          , ppSort = fmap 
+                              (namedScratchpadFilterOutWorkspace.)
+                              (ppSort defaultPP)
       }
       , manageHook = manageDocks <+> myManageHook
       , startupHook = setWMName "LG3D"
